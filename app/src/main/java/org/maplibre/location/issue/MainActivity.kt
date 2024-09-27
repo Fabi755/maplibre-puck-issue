@@ -15,14 +15,16 @@ import org.maplibre.android.location.engine.LocationEngineCallback
 import org.maplibre.android.location.engine.LocationEngineRequest
 import org.maplibre.android.location.engine.LocationEngineResult
 import org.maplibre.android.location.modes.RenderMode
+import org.maplibre.android.location.permissions.PermissionsListener
+import org.maplibre.android.location.permissions.PermissionsManager
 import org.maplibre.location.issue.databinding.ActivityMainBinding
 
 class MainActivity : Activity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var permissionsManager: PermissionsManager
     private var defaultLocationEngine: LocationEngine? = null
 
-    @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapLibre.getInstance(applicationContext);
@@ -30,6 +32,47 @@ class MainActivity : Activity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.btnToggleLocationUpdates.setOnClickListener {
+            binding.mapView.getMapAsync { map ->
+                if (map.locationComponent.locationEngine is NonOpLocationEngine) {
+                    map.locationComponent.locationEngine = defaultLocationEngine
+                    Toast.makeText(this, "Location updates enabled", Toast.LENGTH_SHORT).show()
+                } else {
+                    map.locationComponent.locationEngine = NonOpLocationEngine
+                    Toast.makeText(this, "Location updates disabled", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        binding.mapView.onCreate(savedInstanceState)
+
+        permissionsManager = PermissionsManager(object: PermissionsListener {
+            override fun onExplanationNeeded(p0: MutableList<String>?) {}
+
+            override fun onPermissionResult(granted: Boolean) {
+                if (granted) {
+                    init()
+                }
+            }
+        })
+
+        if (!PermissionsManager.areLocationPermissionsGranted(this)) {
+            permissionsManager.requestLocationPermissions(this)
+        } else {
+            init()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun init() {
         binding.mapView.getMapAsync { map ->
             map.setStyle("https://tiles.versatiles.org/assets/styles/colorful.json") { style ->
                 map.locationComponent.activateLocationComponent(
@@ -54,20 +97,6 @@ class MainActivity : Activity() {
                 defaultLocationEngine = map.locationComponent.locationEngine
             }
         }
-
-        binding.btnToggleLocationUpdates.setOnClickListener {
-            binding.mapView.getMapAsync { map ->
-                if (map.locationComponent.locationEngine is NonOpLocationEngine) {
-                    map.locationComponent.locationEngine = defaultLocationEngine
-                    Toast.makeText(this, "Location updates enabled", Toast.LENGTH_SHORT).show()
-                } else {
-                    map.locationComponent.locationEngine = NonOpLocationEngine
-                    Toast.makeText(this, "Location updates disabled", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-        binding.mapView.onCreate(savedInstanceState)
     }
 
     object NonOpLocationEngine : LocationEngine {

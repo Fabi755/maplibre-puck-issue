@@ -1,6 +1,6 @@
 Show case for MapLibre puck issue.
 
-## Interessted files ##
+## Interesting files ##
 
 **[app/src/main/java/org/maplibre/location/issue/MainActivity.kt](https://github.com/Fabi755/maplibre-puck-issue/blob/main/app/src/main/java/org/maplibre/location/issue/MainActivity.kt)** 
 Sample code for init map with location component. 
